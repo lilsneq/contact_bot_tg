@@ -4,7 +4,9 @@
 # Импорты
 import asyncpg
 import os
+import logging
 from dotenv import load_dotenv
+
 
 
 # Код
@@ -27,7 +29,7 @@ class DBConnect:
         TOKEN_DB = os.getenv('DATABASE_URL')
 
         if not TOKEN_DB:
-            print('DATABASE_URL НЕТ В .env')
+            logging.error('DATABASE_URL НЕТ В .env')
             return
 
         db_pool = await asyncpg.create_pool(
@@ -35,7 +37,7 @@ class DBConnect:
             min_size=5,
             max_size=10
         )
-        print('db_pool УСПЕШНО СОЗДАН')
+        logging.info('db_pool УСПЕШНО СОЗДАН')
         return db_pool
 
 
@@ -45,7 +47,7 @@ class DBConnect:
         if db_pool:
             await db_pool.close()
             db_pool = None
-            print('db_pool УСПЕШНО ЗАКРЫТ')
+            logging.info('db_pool УСПЕШНО ЗАКРЫТ')
 
 
 
