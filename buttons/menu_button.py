@@ -30,20 +30,34 @@ def get_main_menu_button():
     builder.button(text='Не хочу искать анкету', callback_data='my_answer')
     builder.button(text='Настройки', callback_data='settings')
     builder.button(text='Центр жалоб', callback_data='complaints')
+    builder.button(text='Правила пользования', callback_data='rules_btn')
 
-    builder.adjust(1, 1, 1, 2)
+    builder.adjust(1, 1, 1, 2, 1)
 
     return builder.as_markup()
 
 
-def get_rules_menu_button():
-    pass
-
-
 def back_to_main_menu_button():
+    """КНОПКА ВОЗВРАТА"""
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Вернуться в меню', callback_data='to_main_menu')
 
+    builder.adjust(1)
+
     return builder.as_markup()
+
+
+def change_my_questionnaire_button():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Изменить анкету', callback_data='change_questionnaire')
+    builder.attach(InlineKeyboardBuilder.from_markup(back_to_main_menu_button()))
+
+    builder.adjust(1)
+
+    return builder.as_markup()
+
+
+
 

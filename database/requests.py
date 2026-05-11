@@ -1,7 +1,7 @@
 # Модуль создания таблиц при запуске бота
 import logging
 from database import connect
-
+from database.connect import db_pool, DBConnect
 
 
 class CreateTableSQL:
@@ -19,8 +19,23 @@ class CreateTableSQL:
                     );
                 """
 
+                query_questionnaire = """
+                    CREATE TABLE IF NOT EXISTS questions_tg_bot_contact (
+                    username_id BIGINT PRIMARY KEY NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    age INT NOT NULL,
+                    text VARCHAR(255) NOT NULL,
+                    image_url VARCHAR(255) NOT NULL,
+                    
+                    FOREIGN KEY (username_id) REFERENCES users_tg_bot_contact(username_id) ON DELETE CASCADE
+                    
+                    );
+                """
+
                 await conn.execute(query_users)
-                logging.debug("ТАБЛИЦА СОЗДАНА УСПЕШНО")
+                await conn.execute(query_questionnaire)
+
+                logging.debug("ТАБЛИЦЫ СОЗДАНЫ УСПЕШНО")
 
         except Exception as e:
             logging.error(f"ОШИБКА: ТАБЛИЦА НЕ СОЗДАЛАСЬ {e}", exc_info=True)
@@ -45,7 +60,6 @@ class CreateRequests:
 
         except Exception as e:
             logging.error(f'ОШИБКА: ЗАПРОСА НА ДОБАВЛЕНИЯ ПОЛЬЗОВАТЕЛЯ {user_id} В БД', exc_info=True)
-
 
 
     @staticmethod
@@ -74,6 +88,24 @@ class CreateRequests:
         except Exception as e:
             logging.error(f'ОШИБКА: ЗАПРОС НА ПРОВЕРКУ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
             return False
+
+
+    @staticmethod
+    async def set_question(user_id: int, name: str, age: int, about: str, image) -> None:
+        """Добавление данных пользователя в Базуданных"""
+        try:
+            pool = await DBConnect.conn_db_pool()
+            async with pool.acquire() as conn:
+                query = """
+                    INSERT INTO questions_tg_bot_contact(username_id, name, age, text, image_url)
+                    VALUES ($1, $2, $3, $4, $5)
+                """
+                await conn.execute(query, user_id, name, age, about, image)
+                logging.debug(f"ЗАПРОС ДОБАВЛЕНИЯ ДАННЫХ {user_id} ОТПРАВЛЕН В PostgreSQL")
+
+        except Exception as e:
+            logging.error(f'ОШИБКА ЗАПРОСА НА ДОБАВЛЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ {e}', exc_info=True)
+
 
 
 
