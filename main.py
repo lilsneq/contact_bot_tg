@@ -20,7 +20,7 @@ from handlers.registration import router as registration_router
 from handlers.rules import router as rules_router
 from handlers.to_back import router as back_router
 from handlers.my_question import router as my_question_router
-
+from handlers.change_question import router as change_question_router
 
 load_dotenv()
 
@@ -50,7 +50,7 @@ async def main() -> None:
     await CreateTableSQL().create_table()
 
 
-    dp.include_routers(registration_router, rules_router, my_question_router, back_router)
+    dp.include_routers(registration_router, rules_router, my_question_router, change_question_router, back_router)
 
     bot = Bot(token=TOKEN_TG_BOT, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 

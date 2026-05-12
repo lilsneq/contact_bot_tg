@@ -119,7 +119,7 @@ async def register_image(message: Message, state: FSMContext) -> None:
     await state.clear()
 
     await message.answer(
-        text='🎉 Вы успешно зарегистрировались!',
+        text=' Вы успешно зарегистрировались!',
         reply_markup=get_main_menu_button()
     )
 

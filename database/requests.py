@@ -97,14 +97,63 @@ class CreateRequests:
             pool = await DBConnect.conn_db_pool()
             async with pool.acquire() as conn:
                 query = """
-                    INSERT INTO questions_tg_bot_contact(username_id, name, age, text, image_url)
+                    INSERT INTO questions_tg_bot_contact (username_id, name, age, text, image_url)
                     VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (username_id) 
+                    DO UPDATE SET 
+                        name = EXCLUDED.name,
+                        age = EXCLUDED.age,
+                        text = EXCLUDED.text,
+                        image_url = EXCLUDED.image_url;
                 """
                 await conn.execute(query, user_id, name, age, about, image)
                 logging.debug(f"ЗАПРОС ДОБАВЛЕНИЯ ДАННЫХ {user_id} ОТПРАВЛЕН В PostgreSQL")
 
         except Exception as e:
             logging.error(f'ОШИБКА ЗАПРОСА НА ДОБАВЛЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ {e}', exc_info=True)
+
+
+    @staticmethod
+    async def get_question(user_id: int):
+        """ЗАПРОС НА ПОЛУЧЕНИЕ ДАННЫХ ДАННЫХ ИЗ БД"""
+        try:
+            async with connect.db_pool.acquire() as conn:
+                query = """
+                    SELECT name, age, text, image_url 
+                    FROM questions_tg_bot_contact
+                    WHERE username_id = $1;
+                """
+
+                logging.debug("ЗАПРОС НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ ИЗ PostgreSQL")
+                return await conn.fetchrow(query, user_id)
+
+
+        except Exception as e:
+            logging.error(f"ОШИБКА ЗАПРОСА НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ {e}", exc_info=True)
+
+
+    @staticmethod
+    async def change_question(user_id: int, name: str, age: int, about: str, image) -> None:
+        """ЗАПРОС НА ИЗМЕНЕНИЕ ДАННЫХ ПРОФИЛЯ"""
+        try:
+            async with connect.db_pool.acquire() as conn:
+                query = """
+                    INSERT INTO questions_tg_bot_contact (username_id, name, age, text, image_url)
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (username_id) 
+                    DO UPDATE SET 
+                        name = EXCLUDED.name,
+                        age = EXCLUDED.age,
+                        text = EXCLUDED.text,
+                        image_url = EXCLUDED.image_url;
+                """
+                await conn.execute(query, user_id, name, age, about, image)
+                logging.debug("ЗАПРОС НА ИЗМЕНЕНИЕ ОТПРАВЛЕН")
+
+        except Exception as e:
+            logging.error(f"ОШИБКА ЗАПРОСА ИЗМЕНЕНИЯ ДАННЫХ ПРОФИЛЯ {e}", exc_info=True)
+
+
 
 
 
