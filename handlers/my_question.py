@@ -24,7 +24,10 @@ async def my_questionnaire_handler(callback: CallbackQuery):
 
     data = await CreateRequests.get_question(user_id)
     if not data:
-        await callback.message.answer("Анкета не найдена")
+        await callback.message.answer(
+            text="Анкета не найдена, создайте её заново",
+            reply_markup=change_my_questionnaire_button()
+        )
         return
 
     await callback.message.answer_photo(
@@ -32,7 +35,8 @@ async def my_questionnaire_handler(callback: CallbackQuery):
         caption=f"   Ваша анкета:\n\n"
                 f"Имя: {data['name']}\n"
                 f"Возраст: {data['age']}\n"
-                f"О себе: {data['text']}",
+                f"О себе: {data['text']}\n"
+                f"Город: {data['city']}",
         reply_markup=change_my_questionnaire_button()
         )
 
