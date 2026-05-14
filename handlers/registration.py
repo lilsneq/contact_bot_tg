@@ -9,10 +9,9 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
 from aiogram.filters import CommandStart
 from aiogram.fsm.state import State, StatesGroup
 
-
 from database.requests import CreateRequests
 
-from buttons.menu_button import get_registration_menu_button, get_main_menu_button
+from buttons.menu_button import get_registration_menu_button, get_main_menu_button, gender_button
 
 
 # СКРИПТ
@@ -24,6 +23,8 @@ class Registration(StatesGroup):
     age = State()
     about = State()
     image = State()
+    city = State()
+    gender = State()
 
 
 
@@ -55,6 +56,7 @@ async def register_click_handlers(callback: CallbackQuery, state: FSMContext) ->
     """ХЕНДЛЕР РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ"""
     await callback.answer()
 
+
     #регестрация в бд
     user_id = callback.from_user.id
     await CreateRequests.set_user_in_bd(user_id)
@@ -69,6 +71,10 @@ async def register_click_handlers(callback: CallbackQuery, state: FSMContext) ->
 @router.message(Registration.name)
 async def register_name(message: Message, state: FSMContext) -> None:
     """хэндлер для того чтобы уловить имя"""
+    if not message.text:
+        await message.answer('Ведите текст')
+        return
+
     await state.update_data(name=message.text)
 
     await state.set_state(Registration.age)
@@ -93,6 +99,13 @@ async def register_age(message: Message, state: FSMContext) -> None:
 @router.message(Registration.about)
 async def register_about(message: Message, state: FSMContext) -> None:
     """хэндлер для того чтобы уловить о себе"""
+    if not message.text:
+        await message.answer('Ведите текст')
+        return
+    if len(message.text) >= 255:
+        await message.answer('О себе не должна занимать больше 255 символов')
+        return
+
     await state.update_data(about=message.text)
 
     await state.set_state(Registration.image)
@@ -104,24 +117,65 @@ async def register_about(message: Message, state: FSMContext) -> None:
 async def register_image(message: Message, state: FSMContext) -> None:
     """хэндлер для того чтобы уловить фото"""
     photo_id = message.photo[-1].file_id
+    if not photo_id:
+        await message.answer('Пришлите фото')
+        return
+
+    await state.update_data(image=photo_id)
+
+    await state.set_state(Registration.city)
+
+    await message.answer('Теперь пришлите свой город')
+
+
+
+@router.message(Registration.city)
+async def register_city(message: Message, state: FSMContext) -> None:
+    if not message.text:
+        await message.answer('Ведите текст')
+        return
+
+    await state.update_data(city=message.text)
+
+    await state.set_state(Registration.gender)
+
+    await message.answer(
+        text='Теперь пришлите свой пол',
+        reply_markup=gender_button()
+    )
+
+
+
+@router.callback_query(Registration.gender)
+async def register_gender(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+
+    if callback.data == 'gender_male':
+        gender_value = 'male'
+    elif callback.data == 'gender_female':
+        gender_value = 'female'
+    else:
+        gender_value = 'other'
+
+    await state.update_data(gender=gender_value)
+
 
     ser_data = await state.get_data()
-    user_id = message.from_user.id
+    user_id = callback.from_user.id
 
     await CreateRequests.set_question(
         user_id=user_id,
         name=ser_data['name'],
         age=ser_data['age'],
         about=ser_data['about'],
-        image=photo_id
+        image=ser_data['image'],
+        city=ser_data['city'],
+        gender=ser_data['gender']
     )
 
     await state.clear()
 
-    await message.answer(
+    await callback.message.edit_text(
         text=' Вы успешно зарегистрировались!',
         reply_markup=get_main_menu_button()
     )
-
-
-
