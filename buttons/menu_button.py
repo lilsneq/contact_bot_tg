@@ -20,14 +20,20 @@ def get_registration_menu_button():
     return builder.as_markup()
 
 
-def get_main_menu_button():
+def get_main_menu_button(is_active: bool = False):
     """ГЛАВНОЕ МЕНЮ"""
 
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Найти анкету', callback_data='mind_questionnaire')
     builder.button(text='Моя анкета', callback_data='my_questionnaire')
-    builder.button(text='Не хочу искать анкету', callback_data='my_answer')
+
+    if is_active:
+        btn_active = 'Включить анкету'
+    else:
+        btn_active = 'Анкета активна'
+
+    builder.button(text=btn_active, callback_data='my_answer')
     builder.button(text='Настройки', callback_data='settings')
     builder.button(text='Центр жалоб', callback_data='complaints')
     builder.button(text='Правила пользования', callback_data='rules_btn')
@@ -59,5 +65,14 @@ def change_my_questionnaire_button():
     return builder.as_markup()
 
 
+
+def gender_button():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Женский', callback_data='gender_female')
+    builder.button(text='Мужской', callback_data='gender_male')
+    builder.adjust(1)
+
+    return builder.as_markup()
 
 
