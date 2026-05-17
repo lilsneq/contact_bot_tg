@@ -8,11 +8,10 @@ class CreateTableSQL:
 
     @staticmethod
     async def create_table() -> None:
-        pool = await DBConnect.conn_db_pool()
+        """СОЗДАНИЕ ТАБЛИЦ ДЛЯ БД"""
+        pool = await DBConnect.get_pool()
         if pool is None:
-            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
             return
-
         try:
             async with pool.acquire() as conn:
 
@@ -57,9 +56,8 @@ class CreateRequests:
     async def set_user_in_bd(user_id: int) -> None:
         """ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ В БД ПРИ РЕГИСТРАЦИИ"""
 
-        pool = await DBConnect.conn_db_pool()
+        pool = await DBConnect.get_pool()
         if pool is None:
-            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
             return
 
         try:
@@ -75,16 +73,15 @@ class CreateRequests:
                 logging.debug(f"ПОЛЬЗОВАТЕЛЬ {user_id} ДОБАВЛЕН В БД")
 
         except Exception:
-            logging.error('ОШИБКА: ЗАПРОСА НА ДОБАВЛЕНИЯ ПОЛЬЗОВАТЕЛЯ {user_id} В БД', exc_info=True)
+            logging.error(f'ОШИБКА: ЗАПРОСА НА ДОБАВЛЕНИЯ ПОЛЬЗОВАТЕЛЯ {user_id} В БД', exc_info=True)
 
 
     @staticmethod
     async def user_in_bd(user_id: int) -> bool:
         """ПРОВЕРКА ЕСТЬ ЛИ ПОЛЬЗОВАТЕЛЬ В БД"""
 
-        pool = await DBConnect.conn_db_pool()
+        pool = await DBConnect.get_pool()
         if pool is None:
-            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
             return
 
         try:
@@ -109,19 +106,17 @@ class CreateRequests:
 
 
         except Exception:
-            logging.error('ОШИБКА: ЗАПРОС НА ПРОВЕРКУ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
+            logging.error(f'ОШИБКА: ЗАПРОСА НА ПРОВЕРКУ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
             return False
 
 
     @staticmethod
-    async def set_question(user_id: int, name: str, age: int, about: str, image, city: str, gender: str) -> None:
+    async def set_question(user_id: int, name: str, age: int, about: str, image: str, city, gender: str) -> None:
         """Добавление данных пользователя в Базуданных или изменения их"""
 
-        pool = await DBConnect.conn_db_pool()
+        pool = await DBConnect.get_pool()
         if pool is None:
-            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
             return
-
         try:
             async with pool.acquire() as conn:
 
@@ -141,16 +136,15 @@ class CreateRequests:
                 logging.debug(f"ЗАПРОС ДОБАВЛЕНИЯ ДАННЫХ {user_id} ОТПРАВЛЕН В БД")
 
         except Exception:
-            logging.error('ОШИБКА ЗАПРОСА НА ДОБАВЛЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ', exc_info=True)
+            logging.error(f'ОШИБКА ЗАПРОСА НА ДОБАВЛЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
 
 
     @staticmethod
     async def get_question(user_id: int) -> None:
         """ЗАПРОС НА ПОЛУЧЕНИЕ ДАННЫХ ДАННЫХ ИЗ БД"""
 
-        pool = await DBConnect.conn_db_pool()
+        pool = await DBConnect.get_pool()
         if pool is None:
-            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
             return
 
         try:
@@ -167,16 +161,15 @@ class CreateRequests:
 
 
         except Exception:
-            logging.error("ОШИБКА ЗАПРОСА НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ", exc_info=True)
+            logging.error(f"ОШИБКА ЗАПРОСА НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ {user_id}", exc_info=True)
 
 
     @staticmethod
     async def get_boolean_active_user(user_id: int) -> None:
         """Получить будевое значение активная ли анкета или нет"""
 
-        pool = await DBConnect.conn_db_pool()
+        pool = await DBConnect.get_pool()
         if pool is None:
-            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
             return
 
         try:
@@ -192,31 +185,30 @@ class CreateRequests:
                 return await conn.fetchval(query, user_id)
 
         except Exception:
-            logging.error("ОШИБКА ЗАПРОСА НА ПРОВЕРКУ АКТИВНОСТИ АНКЕТЫ", exc_info=True)
+            logging.error(f"ОШИБКА ЗАПРОСА НА ПРОВЕРКУ АКТИВНОСТИ АНКЕТЫ {user_id}", exc_info=True)
 
 
     @staticmethod
     async def set_boolean_active_user(user_id: int, is_active: bool) -> None:
         """Изменение активности анкеты"""
 
-        pool = await DBConnect.conn_db_pool()
+        pool = await DBConnect.get_pool()
         if pool is None:
-            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
             return
 
-        query = """
-            UPDATE users_tg_bot_contact
-            SET is_active = $2
-            WHERE username_id = $1;
-        """
-
         try:
+            query = """
+                UPDATE users_tg_bot_contact
+                SET is_active = $2
+                WHERE username_id = $1;
+            """
+
             async with pool.acquire() as conn:
                 await conn.execute(query, user_id, is_active)
                 logging.debug(f"ЗАПРОС НА ИЗМЕНЕНИЕ АКТИВНОСТИ АНКЕТЫ ОТПРАВЛЕН {user_id} БД")
 
         except Exception:
-            logging.error('ОШИБКА ИЗМЕНЕНИЯ АКТИВНОСТИ АНКЕТЫ ПОЛЬЗОВАТЕЛЯ', exc_info=True)
+            logging.error(f'ОШИБКА ИЗМЕНЕНИЯ АКТИВНОСТИ АНКЕТЫ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
 
 
 
