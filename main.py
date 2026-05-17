@@ -22,6 +22,13 @@ from handlers.to_back import router as back_router
 from handlers.my_question import router as my_question_router
 from handlers.change_question import router as change_question_router
 from handlers.change_find_question import router as change_find_question_router
+from handlers.settings import router as settings_router
+from handlers.complaint_center import router as complaint_center_router
+from handlers.find_question import router as find_question_router
+
+
+
+# СКРИПТ ЗАПУСКА
 
 load_dotenv()
 
@@ -53,7 +60,9 @@ async def main() -> None:
 
     dp.include_routers(registration_router, rules_router,
                        my_question_router, change_question_router,
-                       change_find_question_router, back_router,
+                       change_find_question_router, settings_router,
+                       complaint_center_router, find_question_router,
+                       back_router
                        )
 
     bot = Bot(token=TOKEN_TG_BOT, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
