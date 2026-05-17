@@ -13,7 +13,7 @@ def get_registration_menu_button():
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Зарегистрироваться', callback_data='registration_btn')
-    builder.button(text='Правила', callback_data='rules_btn')
+    builder.button(text='Правила', callback_data='rules_btn_register')
 
     builder.adjust(1)
 
@@ -43,6 +43,16 @@ def get_main_menu_button(is_active: bool = False):
     return builder.as_markup()
 
 
+def back_to_registration_menu_button():
+    """КНОПКА ВОЗВРАТА В РЕГИСТРАЦИЮ"""
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Вернуться в регистрацию', callback_data='to_registration_menu')
+
+    builder.adjust(1)
+
+    return builder.as_markup()
+
 def back_to_main_menu_button():
     """КНОПКА ВОЗВРАТА"""
     builder = InlineKeyboardBuilder()
@@ -55,6 +65,7 @@ def back_to_main_menu_button():
 
 
 def change_my_questionnaire_button():
+    """КНОПКИ ИЗМЕНЕНИЯ АНКЕТЫ"""
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Изменить анкету', callback_data='change_questionnaire')
@@ -67,6 +78,7 @@ def change_my_questionnaire_button():
 
 
 def gender_button():
+    """КНОПКИ ПОЛА"""
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Женский', callback_data='gender_female')
