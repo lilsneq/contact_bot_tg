@@ -1,16 +1,21 @@
 # Модуль создания таблиц при запуске бота
 import logging
 
-from database import connect
-from database.connect import db_pool, DBConnect
+from database.connect import DBConnect
 
 
 class CreateTableSQL:
 
     @staticmethod
     async def create_table() -> None:
+        pool = await DBConnect.conn_db_pool()
+        if pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return
+
         try:
-            async with connect.db_pool.acquire() as conn:
+            async with pool.acquire() as conn:
+
                 query_users = """
                     CREATE TABLE IF NOT EXISTS users_tg_bot_contact (
                     username_id BIGINT PRIMARY KEY NOT NULL,
@@ -26,7 +31,7 @@ class CreateTableSQL:
                     username_id BIGINT PRIMARY KEY NOT NULL,
                     name VARCHAR(255) NOT NULL,
                     age INT CHECK (age >= 1 AND age <= 999) NOT NULL,
-                    text VARCHAR(255) NULL,
+                    text VARCHAR(255) NOT NULL,
                     image_url TEXT NOT NULL,
                     city VARCHAR(255) NOT NULL,
                     gender VARCHAR(7) NOT NULL,
@@ -41,8 +46,8 @@ class CreateTableSQL:
 
                 logging.debug("ТАБЛИЦЫ СОЗДАНЫ УСПЕШНО")
 
-        except Exception as e:
-            logging.error(f"ОШИБКА: ТАБЛИЦА НЕ СОЗДАЛАСЬ {e}", exc_info=True)
+        except Exception:
+            logging.error("ОШИБКА: ТАБЛИЦА НЕ СОЗДАЛАСЬ", exc_info=True)
 
 
 
@@ -51,8 +56,15 @@ class CreateRequests:
     @staticmethod
     async def set_user_in_bd(user_id: int) -> None:
         """ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ В БД ПРИ РЕГИСТРАЦИИ"""
+
+        pool = await DBConnect.conn_db_pool()
+        if pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return
+
         try:
-            async with connect.db_pool.acquire() as conn:
+            async with pool.acquire() as conn:
+
                 query_users = """
                     INSERT INTO users_tg_bot_contact(username_id)
                     VALUES ($1)
@@ -60,17 +72,24 @@ class CreateRequests:
                 """
 
                 await conn.execute(query_users, user_id)
-                logging.debug(f"ПОЛЬЗОВАТЕЛЬ {user_id} ДОБАВЛЕН В PostgreSQL")
+                logging.debug(f"ПОЛЬЗОВАТЕЛЬ {user_id} ДОБАВЛЕН В БД")
 
-        except Exception as e:
-            logging.error(f'ОШИБКА: ЗАПРОСА НА ДОБАВЛЕНИЯ ПОЛЬЗОВАТЕЛЯ {user_id} В БД', exc_info=True)
+        except Exception:
+            logging.error('ОШИБКА: ЗАПРОСА НА ДОБАВЛЕНИЯ ПОЛЬЗОВАТЕЛЯ {user_id} В БД', exc_info=True)
 
 
     @staticmethod
-    async def user_in_bd(user_id: int) -> None:
+    async def user_in_bd(user_id: int) -> bool:
         """ПРОВЕРКА ЕСТЬ ЛИ ПОЛЬЗОВАТЕЛЬ В БД"""
+
+        pool = await DBConnect.conn_db_pool()
+        if pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return
+
         try:
-            async with connect.db_pool.acquire() as conn:
+            async with pool.acquire() as conn:
+
                 query_users = """
                 SELECT username_id 
                 FROM users_tg_bot_contact
@@ -82,24 +101,30 @@ class CreateRequests:
                 result = await conn.fetchval(query_users, user_id)
 
                 if result:
-                    logging.info(f"ПОЛЬЗОВАТЕЛЬ {user_id} ЕСТЬ В PostgreSQL")
+                    logging.info(f"ПОЛЬЗОВАТЕЛЬ {user_id} ЕСТЬ В БД")
                     return True
 
-                logging.info(f'ПОЛЬЗОВАТЕЛЯ {user_id} НЕТ В PostgreSQL')
+                logging.info(f'ПОЛЬЗОВАТЕЛЯ {user_id} НЕТ В БД')
                 return False
 
 
-        except Exception as e:
-            logging.error(f'ОШИБКА: ЗАПРОС НА ПРОВЕРКУ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
+        except Exception:
+            logging.error('ОШИБКА: ЗАПРОС НА ПРОВЕРКУ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
             return False
 
 
     @staticmethod
     async def set_question(user_id: int, name: str, age: int, about: str, image, city: str, gender: str) -> None:
         """Добавление данных пользователя в Базуданных или изменения их"""
+
+        pool = await DBConnect.conn_db_pool()
+        if pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return
+
         try:
-            pool = await DBConnect.conn_db_pool()
             async with pool.acquire() as conn:
+
                 query = """
                     INSERT INTO questions_tg_bot_contact (username_id, name, age, text, image_url, city, gender)
                     VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -113,65 +138,85 @@ class CreateRequests:
                         gender = EXCLUDED.gender;
                 """
                 await conn.execute(query, user_id, name, age, about, image, city, gender)
-                logging.debug(f"ЗАПРОС ДОБАВЛЕНИЯ ДАННЫХ {user_id} ОТПРАВЛЕН В PostgreSQL")
+                logging.debug(f"ЗАПРОС ДОБАВЛЕНИЯ ДАННЫХ {user_id} ОТПРАВЛЕН В БД")
 
-        except Exception as e:
-            logging.error(f'ОШИБКА ЗАПРОСА НА ДОБАВЛЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ {e}', exc_info=True)
+        except Exception:
+            logging.error('ОШИБКА ЗАПРОСА НА ДОБАВЛЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ', exc_info=True)
 
 
     @staticmethod
     async def get_question(user_id: int) -> None:
         """ЗАПРОС НА ПОЛУЧЕНИЕ ДАННЫХ ДАННЫХ ИЗ БД"""
+
+        pool = await DBConnect.conn_db_pool()
+        if pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return
+
         try:
-            async with connect.db_pool.acquire() as conn:
+            async with pool.acquire() as conn:
+
                 query = """
                     SELECT name, age, text, image_url, city
                     FROM questions_tg_bot_contact
                     WHERE username_id = $1;
                 """
 
-                logging.debug(f"ЗАПРОС НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ {user_id} ИЗ PostgreSQL")
+                logging.debug(f"ЗАПРОС НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ {user_id} ИЗ БД")
                 return await conn.fetchrow(query, user_id)
 
 
-        except Exception as e:
-            logging.error(f"ОШИБКА ЗАПРОСА НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ {e}", exc_info=True)
+        except Exception:
+            logging.error("ОШИБКА ЗАПРОСА НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ", exc_info=True)
 
 
     @staticmethod
-    async def get_boolean_active_user(user_id: int) -> bool:
+    async def get_boolean_active_user(user_id: int) -> None:
         """Получить будевое значение активная ли анкета или нет"""
+
+        pool = await DBConnect.conn_db_pool()
+        if pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return
+
         try:
-            async with connect.db_pool.acquire() as conn:
+            async with pool.acquire() as conn:
+
                 query = """
                     SELECT is_active
                     FROM users_tg_bot_contact
                     WHERE username_id = $1;
                 """
 
-                logging.debug(f"ЗАПРОС НА ПРОВЕРКУ АКТИВНОСТИ ПРОФИЛЯ {user_id} ОТПРАВЛЕН PostgreSQL")
+                logging.debug(f"ЗАПРОС НА ПРОВЕРКУ АКТИВНОСТИ ПРОФИЛЯ {user_id} ОТПРАВЛЕН БД")
                 return await conn.fetchval(query, user_id)
 
-        except Exception as e:
-            logging.error(f"ОШИБКА ЗАПРОСА НА ПРОВЕРКУ АКТИВНОСТИ АНКЕТЫ {e}", exc_info=True)
+        except Exception:
+            logging.error("ОШИБКА ЗАПРОСА НА ПРОВЕРКУ АКТИВНОСТИ АНКЕТЫ", exc_info=True)
 
 
     @staticmethod
     async def set_boolean_active_user(user_id: int, is_active: bool) -> None:
         """Изменение активности анкеты"""
+
+        pool = await DBConnect.conn_db_pool()
+        if pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return
+
+        query = """
+            UPDATE users_tg_bot_contact
+            SET is_active = $2
+            WHERE username_id = $1;
+        """
+
         try:
-            async with connect.db_pool.acquire() as conn:
-                query = """
-                    UPDATE users_tg_bot_contact
-                    SET is_active = $2
-                    WHERE username_id = $1;
-                """
-
+            async with pool.acquire() as conn:
                 await conn.execute(query, user_id, is_active)
-                logging.debug(f"ЗАПРОС НА ИЗМЕНЕНИЕ АКТИВНОСТИ АНКЕТЫ ОТПРАВЛЕН {user_id} PostgreSQL")
+                logging.debug(f"ЗАПРОС НА ИЗМЕНЕНИЕ АКТИВНОСТИ АНКЕТЫ ОТПРАВЛЕН {user_id} БД")
 
-        except Exception as e:
-            logging.error('ОШИБКА ИЗМЕНЕНИЯ АКТИВНОСТИ АНКЕТЫ ПОЛЬЗОВАТЕЛЯ {e}', exc_info=True)
+        except Exception:
+            logging.error('ОШИБКА ИЗМЕНЕНИЯ АКТИВНОСТИ АНКЕТЫ ПОЛЬЗОВАТЕЛЯ', exc_info=True)
 
 
 
