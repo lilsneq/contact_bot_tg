@@ -14,41 +14,46 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-db_pool = None
 
 
 class DBConnect:
     """КЛАСС ПОДКЛЮЧЕНИЯ И ОТКЛЮЧЕНИЯ ОТ БД"""
-    @staticmethod
-    async def conn_db_pool():
-        global db_pool
+    _db_pool = None
 
-        if db_pool is not None:
-            return db_pool
+    @classmethod
+    async def conn_db_pool(cls):
+
+        if cls._db_pool is not None:
+            return cls._db_pool
 
         TOKEN_DB = os.getenv('DATABASE_URL')
 
         if not TOKEN_DB:
             logging.error('DATABASE_URL НЕТ В .env')
-            return
+            return None
+        try:
+            cls._db_pool = await asyncpg.create_pool(
+                TOKEN_DB,
+                min_size=5,
+                max_size=10
+            )
+            logging.info('ПУЛ УСПЕШНО СОЗДАН')
+            return cls._db_pool
 
-        db_pool = await asyncpg.create_pool(
-            TOKEN_DB,
-            min_size=5,
-            max_size=10
-        )
-        logging.info('db_pool УСПЕШНО СОЗДАН')
-        return db_pool
+        except Exception:
+            logging.error('КРИТИЧЕСКАЯ ОШИБКА ПРИ СОЗДАНИИ ПУЛА', exc_info=True)
+            return None
 
 
-    @staticmethod
-    async def exit_db_pool():
-        global db_pool
-        if db_pool:
-            await db_pool.close()
-            db_pool = None
-            logging.info('db_pool УСПЕШНО ЗАКРЫТ')
-
+    @classmethod
+    async def exit_db_pool(cls):
+        if cls._db_pool is not None:
+            try:
+                await cls._db_pool.close()
+                cls._db_pool = None
+                logging.info('ПУЛ УСПЕШНО ЗАКРЫТ')
+            except Exception:
+                logging.error('ОШИБКА ПРИ ЗАКРЫТИИ ПУЛА', exc_info=True)
 
 
 
