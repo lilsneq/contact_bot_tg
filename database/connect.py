@@ -21,6 +21,14 @@ class DBConnect:
     _db_pool = None
 
     @classmethod
+    async def get_pool(cls):
+        if cls._db_pool is None:
+            logging.error("ПУЛ НЕ ИНИЦИАЛИЦИРОВАН")
+            return None
+        return cls._db_pool
+
+
+    @classmethod
     async def conn_db_pool(cls):
 
         if cls._db_pool is not None:
