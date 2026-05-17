@@ -1,0 +1,6 @@
+aiogram==3.28.2
+asyncpg==0.31.0
+pydantic==2.13.4
+python-dotenv==1.2.2
+aiofiles==25.1.0
+asyncio==4.0.0
