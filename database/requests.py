@@ -25,9 +25,9 @@ class CreateTableSQL:
                     CREATE TABLE IF NOT EXISTS questions_tg_bot_contact (
                     username_id BIGINT PRIMARY KEY NOT NULL,
                     name VARCHAR(255) NOT NULL,
-                    age INT NOT NULL,
-                    text VARCHAR(255) NOT NULL,
-                    image_url VARCHAR(255) NOT NULL,
+                    age INT CHECK (age >= 1 AND age <= 999) NOT NULL,
+                    text VARCHAR(255) NULL,
+                    image_url TEXT NOT NULL,
                     city VARCHAR(255) NOT NULL,
                     gender VARCHAR(7) NOT NULL,
                     
