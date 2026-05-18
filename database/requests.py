@@ -271,5 +271,60 @@ class FindRequest:
             return None
 
 
+    @staticmethod
+    async def add_interaction(user_id: int, viewed_id: str, is_like: bool) -> bool:
+        """Записывает лайк или дизлайк пользователя в таблицу взаимодействий"""
+        pool = await DBConnect.get_pool()
+        if pool is None:
+            return
+
+        try:
+            query = """
+                INSERT INTO interactions_tg_bot_contact (username_id, viewed_id, is_like)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (username_id, viewed_id)
+                DO UPDATE SET is_like = EXCLUDED.is_like;
+            """
+            async with pool.acquire() as conn:
+                await conn.execute(query, user_id, viewed_id, is_like)
+                logging.debug('ЗАПРОС НА ДОБАВЛЕНИЕ В ТАБЛИЦУ ПОЛЬЗОВАТЕЛЯ')
+                return True
+
+        except Exception:
+            logging.error('ОШИБКА ЗАПИСИ ВЗАИМОДЕЙСТВИЯ (лайк/дизлайк)', exc_info=True)
+            return False
 
 
+    @staticmethod
+    async def get_city(username_id: int) -> None:
+        pool = await DBConnect.get_pool()
+        if pool is None:
+            return
+
+        try:
+
+            query = """
+                SELECT city
+                FROM questions_tg_bot_contact AS q
+                WHERE username_id = $1
+            """
+
+            async with pool.acquire() as conn:
+                res = await conn.fetchrow(query, username_id)
+                logging.debug('ЗАПРОС НА ПОЛУЧЕНИЕ ГОРОДА')
+                return res['city'] if res else None
+
+        except Exception:
+            logging.error('ОШИБКА ПОЛУЧЕНИЯ ГОРОДА', exc_info=True)
+
+
+
+
+#
+# if __name__ == '__main__':
+#     async def start():
+#         await DBConnect.conn_db_pool()
+#         res = await FindRequest.get_city(1000000000)
+#         print(res)
+#
+#     asyncio.run(start())
