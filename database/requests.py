@@ -231,7 +231,6 @@ class CreateRequests:
 
 
 
-
 class FindRequest:
 
     @staticmethod
@@ -262,7 +261,14 @@ class FindRequest:
                 LIMIT 1;
             """
 
+            async with pool.acquire() as conn:
+                res = await conn.fetchrow(query, user_id, city)
+                logging.debug('ЗАПРОС НА ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ И АКТИВНОСТИ ДЛЯ ПОИСКА')
+                return dict(res) if res else None
 
+        except Exception:
+            logging.error('ОШИБКА ЗАПРОСА ПОИСКА АНКЕТЫ ПО is_active и городу', exc_info=True)
+            return None
 
 
 
