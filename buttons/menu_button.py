@@ -3,7 +3,7 @@
 # Импорты
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
+from buttons.help_for_button import ProfileReactionCallback
 
 
 
@@ -53,6 +53,7 @@ def back_to_registration_menu_button():
 
     return builder.as_markup()
 
+
 def back_to_main_menu_button():
     """КНОПКА ВОЗВРАТА"""
     builder = InlineKeyboardBuilder()
@@ -76,7 +77,6 @@ def change_my_questionnaire_button():
     return builder.as_markup()
 
 
-
 def gender_button():
     """КНОПКИ ПОЛА"""
     builder = InlineKeyboardBuilder()
@@ -88,3 +88,16 @@ def gender_button():
     return builder.as_markup()
 
 
+def like_or_dislike_button(target_id: int):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='❤️',
+                   callback_data=ProfileReactionCallback(target_id=target_id, is_like=True))
+
+    builder.button(text='👎',
+                   callback_data=ProfileReactionCallback(target_id=target_id, is_like=False))
+
+    builder.attach(InlineKeyboardBuilder.from_markup(back_to_main_menu_button()))
+
+    builder.adjust(2)
+    return builder.as_markup()
