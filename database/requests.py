@@ -1,4 +1,6 @@
 # Модуль создания таблиц при запуске бота
+import asyncio
+
 import logging
 
 from database.connect import DBConnect
@@ -39,9 +41,24 @@ class CreateTableSQL:
                     
                     );
                 """
+                query_interactions = """
+                    CREATE TABLE IF NOT EXISTS interactions_tg_bot_contact (
+                    username_id BIGINT NOT NULL,
+                    viewed_id BIGINT NOT NULL,
+                    is_like BOOLEAN NOT NULL DEFAULT FALSE,
+                    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    
+                    PRIMARY KEY (username_id, viewed_id),
+                    
+                    FOREIGN KEY (username_id) REFERENCES users_tg_bot_contact(username_id) ON DELETE CASCADE,
+                    FOREIGN KEY (viewed_id) REFERENCES users_tg_bot_contact(username_id) ON DELETE CASCADE
+                    );
+
+                """
 
                 await conn.execute(query_users)
                 await conn.execute(query_questionnaire)
+                await conn.execute(query_interactions)
 
                 logging.debug("ТАБЛИЦЫ СОЗДАНЫ УСПЕШНО")
 
@@ -215,6 +232,35 @@ class CreateRequests:
 
 
 
+class FindRequest:
+
+    @staticmethod
+    async def get_is_active_quest(user_id: int, city: str) -> None:
+        """Получение все активных анкет, у которых совпали username_id, которые должны иметься в двух таблицах"""
+        pool = await DBConnect.get_pool()
+        if pool is None:
+            return
+
+        try:
+            query = """
+                SELECT u.*, q.* 
+                FROM users_tg_bot_contact AS u 
+                INNER JOIN questions_tg_bot_contact AS q 
+                    ON u.username_id = q.username_id 
+                
+                LEFT JOIN interactions_tg_bot_contact AS i 
+                    ON u.username_id = i.viewed_id 
+                    AND i.username_id = $1
+                    AND (i.is_like = TRUE OR i.viewed_at > NOW() - INTERVAL '1 DAY')
+                
+                WHERE u.username_id != $1 
+                  AND u.is_active = TRUE 
+                  AND LOWER(TRIM(q.city)) = LOWER(TRIM($2))
+                  AND i.viewed_id IS NULL 
+                  AND u.is_block = FALSE
+                ORDER BY RANDOM() 
+                LIMIT 1;
+            """
 
 
 
