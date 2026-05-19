@@ -71,7 +71,8 @@ pip install -r requirements.txt
 ### 4. Настройка файла конфигурации
 Создайте в корне проекта файл `.env` и добавьте в него следующие переменные:
 ```env
-BOT_TOKEN=1234567890:ABCdefGhIJKlmNoPQRsTUVwXyZ  # Токен от @BotFather
+
+TOKEN_TG=1234567890:ABCdefGhIJKlmNoPQRsTUVwXyZ  # Токен от @BotFather
 DATABASE_URL=postgresql://user:password@localhost:5432/db_name  # Подключение к PostgreSQL
 ```
 
