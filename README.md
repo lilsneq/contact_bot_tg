@@ -72,7 +72,7 @@ pip install -r requirements.txt
 Создайте в корне проекта файл `.env` и добавьте в него следующие переменные:
 ```env
 
-TOKEN_TG=1234567890:ABCdefGhIJKlmNoPQRsTUVwXyZ  # Токен от @BotFather
+TOKEN_TG=  # Токен от @BotFather
 DATABASE_URL=postgresql://user:password@localhost:5432/db_name  # Подключение к PostgreSQL
 ```
 
