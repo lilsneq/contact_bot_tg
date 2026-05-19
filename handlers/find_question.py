@@ -3,9 +3,7 @@
 # ИМПОРТЫ
 
 from aiogram import F, Router, Bot
-from aiogram.client import bot
 from aiogram.types import CallbackQuery
-from aiogram.filters.callback_data import CallbackData
 
 
 from buttons.menu_button import like_or_dislike_button, back_to_main_menu_button
