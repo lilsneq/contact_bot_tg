@@ -16,6 +16,7 @@ router = Router()
 
 @router.callback_query(F.data == 'my_answer')
 async def my_answer_activiti_handler(callback: CallbackQuery):
+    """Изменение активности у пользователя"""
     await callback.answer()
 
     user_id = callback.from_user.id
