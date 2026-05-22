@@ -23,6 +23,7 @@ class CreateTableSQL:
                     text VARCHAR(255) NULL,
                     is_active BOOLEAN NOT NULL DEFAULT FALSE,
                     is_block BOOLEAN NOT NULL DEFAULT FALSE,
+                    tg_us VARCHAR(255) NULL,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     );
                 """
@@ -70,7 +71,7 @@ class CreateTableSQL:
 class CreateRequests:
 
     @staticmethod
-    async def set_user_in_bd(user_id: int) -> None:
+    async def set_user_in_bd(user_id: int, username: str) -> None:
         """ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ В БД ПРИ РЕГИСТРАЦИИ"""
 
         pool = await DBConnect.get_pool()
@@ -81,12 +82,12 @@ class CreateRequests:
             async with pool.acquire() as conn:
 
                 query_users = """
-                    INSERT INTO users_tg_bot_contact(username_id)
-                    VALUES ($1)
+                    INSERT INTO users_tg_bot_contact(username_id, tg_us)
+                    VALUES ($1, $2)
                     ON CONFLICT (username_id) DO NOTHING;
                 """
 
-                await conn.execute(query_users, user_id)
+                await conn.execute(query_users, user_id, username)
                 logging.debug(f"ПОЛЬЗОВАТЕЛЬ {user_id} ДОБАВЛЕН В БД")
 
         except Exception:
@@ -227,7 +228,25 @@ class CreateRequests:
         except Exception:
             logging.error(f'ОШИБКА ИЗМЕНЕНИЯ АКТИВНОСТИ АНКЕТЫ ПОЛЬЗОВАТЕЛЯ {user_id}', exc_info=True)
 
+    @staticmethod
+    async def get_taguser_table(user_id: int) -> None:
+        pool = await DBConnect.get_pool()
+        if pool is None:
+            return
 
+        try:
+            query = """
+                SELECT tg_us
+                FROM users_tg_bot_contact AS u
+                WHERE u.username_id = $1
+            """
+
+            async with pool.acquire() as conn:
+                await conn.fetchrow(query, user_id)
+                logging.debug(f"ЗАПРОС НА ПРОСМОТР ТГ ЮЗА {user_id} БД")
+
+        except Exception:
+            logging.error(f'ОШИБКА ЗАПРОСА ТГ ЮЗА{user_id}', exc_info=True)
 
 
 
@@ -235,28 +254,37 @@ class FindRequest:
 
     @staticmethod
     async def get_is_active_quest(user_id: int, city: str) -> None:
-        """Получение все активных анкет, у которых совпали username_id, которые должны иметься в двух таблицах"""
+        """Получение всех активных анкет, у которых совпали username_id, которые должны иметься в двух таблицах"""
         pool = await DBConnect.get_pool()
         if pool is None:
             return
 
         try:
             query = """
-                SELECT u.*, q.* 
+                SELECT 
+                    u.username_id,
+                    q.name,
+                    q.image_url,
+                    q.age,
+                    q.city,
+                    q.text
+                    
                 FROM users_tg_bot_contact AS u 
+                
                 INNER JOIN questions_tg_bot_contact AS q 
                     ON u.username_id = q.username_id 
                 
                 LEFT JOIN interactions_tg_bot_contact AS i 
                     ON u.username_id = i.viewed_id 
                     AND i.username_id = $1
-                    AND (i.is_like = TRUE OR i.viewed_at > NOW() - INTERVAL '1 DAY')
+                    AND (i.viewed_at > NOW() - INTERVAL '1 SECOND')
                 
                 WHERE u.username_id != $1 
                   AND u.is_active = TRUE 
                   AND LOWER(TRIM(q.city)) = LOWER(TRIM($2))
                   AND i.viewed_id IS NULL 
                   AND u.is_block = FALSE
+                
                 ORDER BY RANDOM() 
                 LIMIT 1;
             """
@@ -283,16 +311,32 @@ class FindRequest:
                 INSERT INTO interactions_tg_bot_contact (username_id, viewed_id, is_like)
                 VALUES ($1, $2, $3)
                 ON CONFLICT (username_id, viewed_id)
-                DO UPDATE SET is_like = EXCLUDED.is_like;
+                DO UPDATE SET 
+                    is_like = EXCLUDED.is_like,
+                    viewed_at = NOW();
             """
+
             async with pool.acquire() as conn:
                 await conn.execute(query, user_id, viewed_id, is_like)
                 logging.debug('ЗАПРОС НА ДОБАВЛЕНИЕ В ТАБЛИЦУ ПОЛЬЗОВАТЕЛЯ')
-                return True
+
+                if not is_like:
+                    return False
+
+                match_query = """
+                        SELECT EXISTS(
+                            SELECT 1
+                            FROM interactions_tg_bot_contact
+                            WHERE username_id = $1 AND viewed_id = $2 AND is_like = TRUE
+                        )
+                    """
+                is_match = await conn.fetchval(match_query, user_id, viewed_id)
+                return is_match
 
         except Exception:
             logging.error('ОШИБКА ЗАПИСИ ВЗАИМОДЕЙСТВИЯ (лайк/дизлайк)', exc_info=True)
             return False
+
 
 
     @staticmethod
@@ -318,13 +362,87 @@ class FindRequest:
             logging.error('ОШИБКА ПОЛУЧЕНИЯ ГОРОДА', exc_info=True)
 
 
+    @staticmethod
+    async def get_match_questionnaire(viewed_id: int) -> None:
+        """ПОКАЗ АНКЕТ КОТОРЫЕ ЛАЙКНУЛИ"""
+        pool = await DBConnect.get_pool()
+        if pool is None:
+            return
+        try:
+            query = """
+                SELECT
+                    u.username_id,
+                    u.tg_us,
+                    q.name,
+                    q.image_url,
+                    q.age,
+                    q.city,
+                    q.text
+                    
+                FROM users_tg_bot_contact AS u
+                
+                INNER JOIN questions_tg_bot_contact AS q
+                    ON u.username_id = q.username_id 
+                
+                INNER JOIN interactions_tg_bot_contact AS i1
+                    ON i1.username_id = $1
+                    AND i1.viewed_id = u.username_id
+                    AND i1.is_like = TRUE 
+                
+        
+                INNER JOIN interactions_tg_bot_contact AS i2
+                    ON i2.username_id = u.username_id
+                    AND i2.viewed_id = $1
+                    AND i2.is_like = TRUE 
+                
+                WHERE u.is_block = FALSE 
+                
+                ORDER BY i1.viewed_at DESC;
+                """
+
+            async with pool.acquire() as conn:
+                res = await conn.fetch(query, viewed_id)
+                logging.debug('ЗАПРОС НА ПОЛУЧЕНИЕ ПРОФИЛЕЙ С ВЗАИМНЫМ ЛАЙКОМ')
+                print(res)
+                return res if res else None
+
+        except Exception:
+            logging.error('ОШИБКА ЗАПРОСА НА ПОЛУЧЕНИЕ МЕТЧА', exc_info=True)
 
 
-#
+    @staticmethod
+    async def check_blocked(user_id: int) -> bool:
+        pool = await DBConnect.get_pool()
+        if pool is None:
+            return
+
+        try:
+            query = """
+                    SELECT is_block
+                    FROM users_tg_bot_contact AS u
+                    WHERE username_id = $1
+                    AND is_block = TRUE
+                    
+                    LIMIT 1;
+                """
+            with pool.acquire() as conn:
+                 logging.debug('ЗАПРОС НА ПОЛУЧЕНИЕ BOOL заблокирован ли пользовтель')
+                 return await conn.fetchrow(query, user_id)
+
+        except Exception:
+            logging.error('ОШИБКА ЗАПРОСА НА ПРОВЕРКУ БЛОКИРОВКИ ПОЛЬЗОВАТЕЛЯ', exc_info=True)
+
+
+
 # if __name__ == '__main__':
 #     async def start():
 #         await DBConnect.conn_db_pool()
-#         res = await FindRequest.get_city(1000000000)
+#         res = await FindRequest.get_match_questionnaire(5361453223)
 #         print(res)
+#
+#         await DBConnect.conn_db_pool()
+#         res1 = await FindRequest.get_is_active_quest(5361453223, 'Барнаул')
+#         print(res1)
+#
 #
 #     asyncio.run(start())
