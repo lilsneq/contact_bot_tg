@@ -40,9 +40,10 @@ async def my_questionnaire_handler(callback: CallbackQuery):
         reply_markup=change_my_questionnaire_button()
         )
 
-
-    await callback.message.delete()
-
+    try:
+        await callback.message.delete()
+    except:
+        pass
 
 
 
