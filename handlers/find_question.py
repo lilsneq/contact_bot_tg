@@ -1,20 +1,23 @@
 # МОДУЛЬ ПОИСКА АНКЕТ
 
 # ИМПОРТЫ
+import logging
 
 from aiogram import F, Router, Bot
 from aiogram.types import CallbackQuery
 
-
-from buttons.menu_button import like_or_dislike_button, back_to_main_menu_button
 from buttons.help_for_button import ProfileReactionCallback
+from buttons.menu_button import like_or_dislike_button, back_to_main_menu_button
+
+from handlers.match_questions import match_questionnaire_button
 
 from database.requests import FindRequest
 
 
 
 
-# Сам скрипт
+# СКРИПТ
+
 
 router = Router()
 
@@ -51,8 +54,9 @@ async def find_handler(callback: CallbackQuery):
                 f"Возраст: {quest['age']}\n"
                 f"О себе: {quest['text']}\n"
                 f"Город: {quest['city']}",
-        reply_markup=like_or_dislike_button(target_id=quest['username_id'],)
+        reply_markup=like_or_dislike_button(target_id=quest['username_id'])
     )
+
 
 
 
@@ -70,7 +74,8 @@ async def profile_reaction_callback(callback: CallbackQuery, callback_data: Prof
         try:
             await bot.send_message(
                 chat_id=target_id,
-                text=f'Кому-то понравилась ваша анкета! Зайдите в поиск чтобы найти взаимность'
+                text=f'Кому-то понравилась ваша анкета!',
+                reply_markup=match_questionnaire_button()
             )
         except:
             pass
@@ -81,7 +86,6 @@ async def profile_reaction_callback(callback: CallbackQuery, callback_data: Prof
         pass
 
     await find_handler(callback)
-
 
 
 
