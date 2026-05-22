@@ -3,7 +3,7 @@
 # Импорты
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from buttons.help_for_button import ProfileReactionCallback
+from buttons.help_for_button import ProfileReactionCallback, MatchReactionCallback
 
 
 
@@ -31,9 +31,10 @@ def get_main_menu_button(is_active: bool = False):
     if is_active:
         btn_active = 'Включить анкету'
     else:
-        btn_active = 'Анкета активна'
+        btn_active = 'Выключить анкету'
 
     builder.button(text=btn_active, callback_data='my_answer')
+
     builder.button(text='Настройки', callback_data='settings')
     builder.button(text='Центр жалоб', callback_data='complaints')
     builder.button(text='Правила пользования', callback_data='rules_btn')
@@ -99,5 +100,27 @@ def like_or_dislike_button(target_id: int):
 
     builder.attach(InlineKeyboardBuilder.from_markup(back_to_main_menu_button()))
 
-    builder.adjust(2)
+    builder.adjust(2, 1)
+    return builder.as_markup()
+
+
+def match_questionnaire_button():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Взаимные симпатии', callback_data='match_questionnaire')
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def match_like_or_dislike_button(target_id: int):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='❤️', callback_data=MatchReactionCallback(target_id=target_id,is_like=True))
+
+    builder.button(text='👎', callback_data=MatchReactionCallback(target_id=target_id,is_like=False))
+
+    builder.attach(InlineKeyboardBuilder.from_markup(back_to_main_menu_button()))
+
+    builder.adjust(2, 1)
     return builder.as_markup()
