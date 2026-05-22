@@ -36,7 +36,6 @@ class Registration(StatesGroup):
 async def cmd_start_handlers(message: Message) -> None:
     """МОДУЛЬ КОТОРЫЙ ДОБАВЛЯЕТ ПОЛЬЗОВАТЕЛЯ В БАЗУ ДАННЫХ ПРИ первой инициализации бота"""
     user_id = message.from_user.id
-
     is_user = await CreateRequests.user_in_bd(user_id)
 
     if not is_user:
@@ -60,9 +59,11 @@ async def register_click_handlers(callback: CallbackQuery, state: FSMContext) ->
     """ХЕНДЛЕР РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ"""
     await callback.answer()
 
+
     #регестрация в бд
+    username = callback.from_user
     user_id = callback.from_user.id
-    await CreateRequests.set_user_in_bd(user_id)
+    await CreateRequests.set_user_in_bd(user_id, username)
 
 
     await state.set_state(Registration.name)
